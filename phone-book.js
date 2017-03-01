@@ -10,9 +10,7 @@ var REGEXP_EMAIL =
     /^[a-zа-яё0-9](\.?[a-zа-яё0-9-_]+)+@([a-zа-яё0-9][-_a-zа-яё0-9]+\.)+[a-zа-яё]{2,4}$/i;
 var REGEXP_PHONE_STANDART = /(\d{3})(\d{3})(\d{2})(\d{2})/;
 var REGEXP_PHONE_BEAUTY = /\+?(\d)\s?\(?(\d{3})\)?\s?(\d{3})[\s-]?(\d{2})[\s-]?(\d{2})/;
-var NAME_COL_LENGTH = 11;
-var PHONE_COL_LENGTH = 19;
-var EMAIL_COL_LENGTH = 19;
+var warnAlert = 'Телефонная книга пустая!';
 
 var Person = function (phone, name, email) {
     this._phone = phone;
@@ -49,6 +47,9 @@ Person.prototype.setEmail = function (email) {
  */
 var PhoneBook = function () {
     this._persons = [];
+    this._nameColLength = null;
+    this._phoneColLength = null;
+    this._emailColLength = null;
 };
 
 PhoneBook.prototype.addPerson = function (person) {
@@ -101,6 +102,50 @@ PhoneBook.prototype.getPersonByPhone = function (phone) {
 
 PhoneBook.prototype.getPersons = function () {
     return this._persons;
+};
+
+PhoneBook.prototype.getNameArr = function () {
+    return this._persons.map(function (person) {
+        return person._name.length;
+    });
+};
+
+PhoneBook.prototype.getBeautyPhoneArr = function () {
+    return this._persons.map(function (person) {
+        return beatifyPhoneNum(person._phone).length;
+    });
+};
+
+PhoneBook.prototype.getEmailArr = function () {
+    return this._persons.map(function (person) {
+        return person._email
+               ? person._email.length
+               : 0;
+    });
+};
+
+PhoneBook.prototype.getNameColLength = function () {
+    return this._nameColLength;
+};
+
+PhoneBook.prototype.setNameColLength = function (length) {
+    this._nameColLength = length;
+};
+
+PhoneBook.prototype.getPhoneColLength = function () {
+    return this._phoneColLength;
+};
+
+PhoneBook.prototype.setPhoneColLength = function (length) {
+    this._phoneColLength = length;
+};
+
+PhoneBook.prototype.getEmailColLength = function () {
+    return this._emailColLength;
+};
+
+PhoneBook.prototype.setEmailColLength = function (length) {
+    this._emailColLength = length;
 };
 
 var phoneBook = new PhoneBook();
@@ -201,8 +246,17 @@ function importFromCsv(csv) {
 }
 
 function showTable() {
-    var table = buildTopOfTable() + addDataIntoTable() + buildBottomOfTable();
-    console.log(table);
+    if (!phoneBook.getPersons().length) {
+        console.log(warnAlert);
+
+        return;
+    }
+    phoneBook.setNameColLength(maxWordLength(phoneBook.getNameArr()));
+    phoneBook.setPhoneColLength(maxWordLength(phoneBook.getBeautyPhoneArr()));
+    phoneBook.setEmailColLength(maxWordLength(phoneBook.getEmailArr()));
+    buildTopOfTable();
+    addDataIntoTable();
+    buildBottomOfTable();
 }
 
 function isValidInfo(phone, name, email) {
@@ -263,57 +317,50 @@ function getPhoneFromInfoStr(info) {
 }
 
 function buildTopOfTable() {
-    var nameCol = 'Имя        ';
-    var phoneCol = 'Телефон            ';
-    var emailCol = 'email              ';
-    return '\n\u{0250C}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{0252C}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02565}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02510}\n' +
-    '\u{0007C} ' + nameCol + '\u{0007C} ' + phoneCol + '\u{02551} ' + emailCol + '\u{0007C}\n' +
-    '\u{0251C}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{0253C}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{0256B}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02524}\n';
+    var topOfTable = '\n┌';
+    var nameCol = 'Имя';
+    var phoneCol = 'Телефон';
+    var emailCol = 'email';
+    topOfTable += '─'.repeat(phoneBook.getNameColLength() + 1) + '┬' +
+        '─'.repeat(phoneBook.getPhoneColLength() + 1) + '╥' +
+        '─'.repeat(phoneBook.getEmailColLength() + 1) + '┐\n';
+
+    topOfTable += '│ ' + nameCol + ' '.repeat(phoneBook.getNameColLength() - nameCol.length);
+    topOfTable += '│ ' + phoneCol + ' '.repeat(phoneBook.getPhoneColLength() - phoneCol.length);
+    topOfTable += '║ ' + emailCol + ' '.repeat(phoneBook.getEmailColLength() - emailCol.length);
+    topOfTable += '│';
+    console.log(topOfTable);
+
+    topOfTable = '├' + '─'.repeat(phoneBook.getNameColLength() + 1);
+    topOfTable += '┼' + '─'.repeat(phoneBook.getPhoneColLength() + 1);
+    topOfTable += '╫' + '─'.repeat(phoneBook.getEmailColLength() + 1);
+    topOfTable += '┤\n';
+    console.log(topOfTable);
 }
 
 function addDataIntoTable() {
-    return phoneBook.getPersons().reduce(function (data, person) {
-        data += '\u{0007C} ' + person.getName();
-        data += addSpacesBetweenWordAndEnd(NAME_COL_LENGTH, person.getName().length);
-        data += '\u{0007C} ' + beatifyPhoneNum(person.getPhone());
-        data += addSpacesBetweenWordAndEnd(PHONE_COL_LENGTH, beatifyPhoneNum(person.getPhone()).length);
-        data += '\u{02551} ' + person.getEmail();
-        data += addSpacesBetweenWordAndEnd(EMAIL_COL_LENGTH, person.getEmail().length);
-        data += '\u{0007C}\n';
-        return data;
-    }, '')
-}
-
-function addSpacesBetweenWordAndEnd(colLength, wordLength) {
-    var emptyLine = '';
-    for (var i = 0; i < colLength - wordLength; i++) {
-        emptyLine += ' ';
-    }
-
-    return emptyLine;
+    return phoneBook.getPersons().forEach(function (person) {
+        var data = '│ ' + person.getName();
+        data += ' '.repeat(phoneBook.getNameColLength() - person.getName().length);
+        data += '│ ' + beatifyPhoneNum(person.getPhone()) +
+            ' '.repeat(phoneBook.getPhoneColLength() - beatifyPhoneNum(person.getPhone()).length);
+        data += '║ ' + person.getEmail();
+        data += ' '.repeat(phoneBook.getEmailColLength() - person.getEmail().length);
+        data += '│\n';
+        console.log(data);
+    });
 }
 
 function buildBottomOfTable() {
-    return '\u{02514}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02534}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02568}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}' +
-    '\u{02500}\u{02500}\u{02500}\u{02500}\u{02500}\u{02518}\n';
+    var bottomOfTable = '└' + '─'.repeat(phoneBook.getNameColLength() + 1);
+    bottomOfTable += '┴' + '─'.repeat(phoneBook.getPhoneColLength() + 1);
+    bottomOfTable += '╨' + '─'.repeat(phoneBook.getEmailColLength() + 1);
+    bottomOfTable += '┘';
+    console.log(bottomOfTable);
+}
+
+function maxWordLength(lengthArr) {
+    return Math.max.apply(null, lengthArr) + 1;
 }
 
 exports.add = add;
